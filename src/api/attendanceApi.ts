@@ -11,8 +11,12 @@ const attendanceApi = {
         return axiosInstance.get<ApiResponse<AttendanceResponse[]>>(`/attendances/today/${classId}`);
     },
 
-    getByClass: (classId: string) => {
-        return axiosInstance.get<ApiResponse<AttendanceResponse[]>>(`/attendances/class/${classId}`);
+    getByClass: (classId: string, page?: number, size?: number, sort?: string) => {
+        const params: Record<string, any> = {};
+        if (page !== undefined) params.page = page;
+        if (size !== undefined) params.size = size;
+        if (sort !== undefined) params.sort = sort;
+        return axiosInstance.get<ApiResponse<AttendanceResponse[]>>(`/attendances/class/${classId}`, { params });
     },
 
     create: (attendance: Partial<AttendanceResponse>) => {

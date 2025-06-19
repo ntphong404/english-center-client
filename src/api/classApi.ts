@@ -3,7 +3,7 @@ import { ApiResponse, PageResponse } from '../types/api';
 import axiosInstance from '../services/axios';
 
 export const classApi = {
-    getAll: (page: number, size: number, sort: string = 'ClassId,ASC') => {
+    getAll: (page?: number, size?: number, sort?: string) => {
         return axiosInstance.get<ApiResponse<PageResponse<ClassResponse>>>('/classes', {
             params: { page, size, sort }
         });
@@ -39,7 +39,11 @@ export const classApi = {
         });
     },
 
-    getByTeacher: (teacherId: string) => {
-        return axiosInstance.get<ApiResponse<ClassResponse[]>>(`/classes/teacher/${teacherId}`);
+    getByTeacher: (teacherId: string, page?: number, size?: number, sort?: string) => {
+        const params: Record<string, any> = {};
+        if (page !== undefined) params.page = page;
+        if (size !== undefined) params.size = size;
+        if (sort !== undefined) params.sort = sort;
+        return axiosInstance.get<ApiResponse<ClassResponse[]>>(`/classes/teacher/${teacherId}`, { params });
     },
 }; 

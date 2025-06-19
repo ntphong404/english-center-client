@@ -5,19 +5,6 @@ import studentApi from '@/api/studentApi';
 import { Student } from '@/types/user';
 
 const AdminDashboard = () => {
-  const [students, setStudents] = useState<Student[]>([]);
-
-  useEffect(() => {
-    const fetchStudents = async () => {
-      const res = await studentApi.getAll(0, 10, 'fullName,asc');
-      setStudents(res.data.result.content);
-      // Log students after setting state
-      res.data.result.content.forEach((student) => {
-        console.log(student.fullName);
-      });
-    };
-    fetchStudents();
-  }, []); // Remove students from dependency array
   // Mock data for dashboard stats
   const stats = [
     { title: 'Tổng số học sinh', value: '215', icon: <Users className="h-5 w-5 text-blue-500" />, change: '+12%', changeDirection: 'up', changeDescription: 'so với tháng trước' },
