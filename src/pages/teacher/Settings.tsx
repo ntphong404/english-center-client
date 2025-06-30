@@ -81,7 +81,7 @@ export default function TeacherSettings() {
         if (user) {
             setLoading(true);
             try {
-                await teacherApi.update(user.userId, {
+                await teacherApi.patch(user.userId, {
                     fullName: settings.name,
                     email: settings.email,
                     dob: settings.dob,

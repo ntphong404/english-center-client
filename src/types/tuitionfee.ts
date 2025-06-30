@@ -1,10 +1,10 @@
-
 export interface TuitionFeeResponse {
     tuitionFeeId: string;
     studentId: string;
     classId: string;
     yearMonth: string;
     amount: number;
+    discount: number;
     remainingAmount: number;
 }
 

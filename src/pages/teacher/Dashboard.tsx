@@ -19,7 +19,7 @@ export default function TeacherDashboard() {
       const user = getUser();
       if (user) {
         try {
-          const res = await classApi.getByTeacher(user.userId);
+          const res = await classApi.getAll(undefined, user.userId, undefined, undefined, 0, 100);
           let result = res.data.result;
           let newClasses: ClassResponse[] = [];
           if (result && typeof result === 'object' && 'content' in result && Array.isArray(result.content)) {

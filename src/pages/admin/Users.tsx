@@ -24,7 +24,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, ChevronRight, Eye, Users, ChevronUp, ChevronDown, ListOrdered, ArrowDownNarrowWide, ArrowUpWideNarrow } from "lucide-react";
 import { User, UserCreateRequest, UserUpdateRequest, CreateStudentRequest, CreateTeacherRequest, UpdateStudentRequest, UpdateTeacherRequest, Teacher, Parent, Student } from "@/types/user";
 import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -34,6 +34,7 @@ import parentApi from '@/api/parentApi';
 import { userApi } from '@/api/userApi';
 import { Checkbox } from "@/components/ui/checkbox";
 import { TablePagination } from "@/components/ui/table-pagination";
+import debounce from "lodash.debounce";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -80,10 +81,13 @@ export default function AdminUsers() {
     const [studentToRemove, setStudentToRemove] = useState<Student | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
+    const [searchName, setSearchName] = useState("");
+    const [sortField, setSortField] = useState("fullName");
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>("asc");
 
     useEffect(() => {
         fetchCurrentUsers();
-    }, [currentPage, activeTab]);
+    }, [currentPage, activeTab, searchName, sortField, sortOrder]);
 
     useEffect(() => {
         if (isAddStudentsDialogOpen) {
@@ -94,27 +98,28 @@ export default function AdminUsers() {
     const fetchCurrentUsers = async () => {
         try {
             let response;
+            const sortParam = `${sortField},${sortOrder}`;
             switch (activeTab) {
                 case 'STUDENT':
-                    response = await studentApi.getAll(currentPage, ITEMS_PER_PAGE, 'fullName,asc');
+                    response = await studentApi.getAll(searchName || undefined, undefined, currentPage, ITEMS_PER_PAGE, sortParam);
                     setStudents(response.data.result.content);
                     setTotalPages(response.data.result.page.totalPages);
                     setTotalElements(response.data.result.page.totalElements);
                     break;
                 case 'TEACHER':
-                    response = await teacherApi.getAll(currentPage, ITEMS_PER_PAGE, 'fullName,asc');
+                    response = await teacherApi.getAll(searchName || undefined, undefined, currentPage, ITEMS_PER_PAGE, sortParam);
                     setTeachers(response.data.result.content);
                     setTotalPages(response.data.result.page.totalPages);
                     setTotalElements(response.data.result.page.totalElements);
                     break;
                 case 'PARENT':
-                    response = await parentApi.getAll(currentPage, ITEMS_PER_PAGE, 'fullName,asc');
+                    response = await parentApi.getAll(searchName || undefined, undefined, currentPage, ITEMS_PER_PAGE, sortParam);
                     setParents(response.data.result.content);
                     setTotalPages(response.data.result.page.totalPages);
                     setTotalElements(response.data.result.page.totalElements);
                     break;
                 case 'ADMIN':
-                    response = await userApi.getByRoleName('ADMIN', currentPage, ITEMS_PER_PAGE, 'fullName,asc');
+                    response = await userApi.getByRoleName('ADMIN', currentPage, ITEMS_PER_PAGE, sortParam);
                     setAdmins(response.data.result.content);
                     setTotalPages(response.data.result.page.totalPages);
                     setTotalElements(response.data.result.page.totalElements);
@@ -156,6 +161,9 @@ export default function AdminUsers() {
                 password: newUser.password || "",
                 fullName: newUser.fullName || "",
                 email: newUser.email || "",
+                gender: "MALE", // Default value
+                phone: "", // Default value
+                address: "", // Default value
                 dob: newUser.dob || new Date().toISOString().split('T')[0],
             };
 
@@ -260,16 +268,16 @@ export default function AdminUsers() {
             let response;
             switch (activeTab) {
                 case 'STUDENT':
-                    response = await studentApi.update(selectedUserId, selectedUser as UpdateStudentRequest);
+                    response = await studentApi.patch(selectedUserId, selectedUser as UpdateStudentRequest);
                     break;
                 case 'TEACHER':
-                    response = await teacherApi.update(selectedUserId, selectedUser as UpdateTeacherRequest);
+                    response = await teacherApi.patch(selectedUserId, selectedUser as UpdateTeacherRequest);
                     break;
                 case 'PARENT':
-                    response = await parentApi.update(selectedUserId, selectedUser);
+                    response = await parentApi.patch(selectedUserId, selectedUser as UserUpdateRequest);
                     break;
                 case 'ADMIN':
-                    response = await userApi.update(selectedUserId, selectedUser);
+                    response = await userApi.patch(selectedUserId, selectedUser);
                     break;
             }
 
@@ -318,7 +326,7 @@ export default function AdminUsers() {
 
     const fetchAvailableStudents = async (page: number) => {
         try {
-            const response = await studentApi.getAll(page - 1, STUDENT_PAGE_SIZE, 'userId,ASC');
+            const response = await studentApi.getAll(undefined, undefined, page - 1, STUDENT_PAGE_SIZE, 'userId,ASC');
             const pageResponse = response.data.result;
             if (pageResponse) {
                 setAvailableStudents(pageResponse.content);
@@ -433,8 +441,25 @@ export default function AdminUsers() {
         }
     };
 
+    // Debounce search
+    const handleSearch = debounce((value: string) => {
+        setSearchName(value);
+        setCurrentPage(0);
+    }, 400);
+
+    // Hàm xử lý đổi sort
+    const handleSort = (field: string) => {
+        if (sortField === field) {
+            setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortField(field);
+            setSortOrder('asc');
+        }
+    };
+
     return (
         <div className="space-y-4">
+            <h2 className="text-2xl font-bold">Quản lý người dùng</h2>
             <Tabs value={activeTab} onValueChange={(value) => {
                 setActiveTab(value);
                 setCurrentPage(0);
@@ -458,8 +483,13 @@ export default function AdminUsers() {
                     {/* Admin tab content */}
                 </TabsContent>
             </Tabs>
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Quản lý người dùng</h2>
+            <div className="flex items-center justify-end gap-2 mb-2">
+                <Input
+                    placeholder="Tìm theo tên..."
+                    defaultValue={searchName}
+                    onChange={e => handleSearch(e.target.value)}
+                    className="w-64"
+                />
                 <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                     <DialogTrigger asChild>
                         <Button>
@@ -549,10 +579,54 @@ export default function AdminUsers() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Tên đăng nhập</TableHead>
-                            <TableHead>Họ và tên</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Ngày sinh</TableHead>
+                            <TableHead>
+                                <div className="flex items-center gap-1">
+                                    <span>Tên đăng nhập</span>
+                                    <button type="button" onClick={() => handleSort('username')} className="ml-1">
+                                        {sortField === 'username' ? (
+                                            sortOrder === 'asc' ? <ArrowUpWideNarrow className="w-4 h-4 text-primary" /> : <ArrowDownNarrowWide className="w-4 h-4 text-primary" />
+                                        ) : (
+                                            <ArrowDownNarrowWide className="w-4 h-4 text-gray-400" />
+                                        )}
+                                    </button>
+                                </div>
+                            </TableHead>
+                            <TableHead>
+                                <div className="flex items-center gap-1">
+                                    <span>Họ và tên</span>
+                                    <button type="button" onClick={() => handleSort('fullName')} className="ml-1">
+                                        {sortField === 'fullName' ? (
+                                            sortOrder === 'asc' ? <ArrowUpWideNarrow className="w-4 h-4 text-primary" /> : <ArrowDownNarrowWide className="w-4 h-4 text-primary" />
+                                        ) : (
+                                            <ArrowDownNarrowWide className="w-4 h-4 text-gray-400" />
+                                        )}
+                                    </button>
+                                </div>
+                            </TableHead>
+                            <TableHead>
+                                <div className="flex items-center gap-1">
+                                    <span>Email</span>
+                                    <button type="button" onClick={() => handleSort('email')} className="ml-1">
+                                        {sortField === 'email' ? (
+                                            sortOrder === 'asc' ? <ArrowUpWideNarrow className="w-4 h-4 text-primary" /> : <ArrowDownNarrowWide className="w-4 h-4 text-primary" />
+                                        ) : (
+                                            <ArrowDownNarrowWide className="w-4 h-4 text-gray-400" />
+                                        )}
+                                    </button>
+                                </div>
+                            </TableHead>
+                            <TableHead>
+                                <div className="flex items-center gap-1">
+                                    <span>Ngày sinh</span>
+                                    <button type="button" onClick={() => handleSort('dob')} className="ml-1">
+                                        {sortField === 'dob' ? (
+                                            sortOrder === 'asc' ? <ArrowUpWideNarrow className="w-4 h-4 text-primary" /> : <ArrowDownNarrowWide className="w-4 h-4 text-primary" />
+                                        ) : (
+                                            <ArrowDownNarrowWide className="w-4 h-4 text-gray-400" />
+                                        )}
+                                    </button>
+                                </div>
+                            </TableHead>
                             <TableHead className="text-right">Thao tác</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -598,9 +672,12 @@ export default function AdminUsers() {
                                         onClick={() => {
                                             setSelectedUserId(user.userId);
                                             setSelectedUser({
-                                                fullName: user.fullName,
-                                                email: user.email,
-                                                dob: user.dob,
+                                                fullName: user.fullName || "",
+                                                email: user.email || "",
+                                                gender: user.gender || "MALE",
+                                                phone: user.phoneNumber || "",
+                                                address: user.address || "",
+                                                dob: user.dob || "",
                                             });
                                             setIsEditDialogOpen(true);
                                         }}

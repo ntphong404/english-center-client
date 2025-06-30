@@ -51,7 +51,7 @@ export default function TeacherAttendance() {
             const user = getUser();
             if (user) {
                 try {
-                    const res = await classApi.getByTeacher(user.userId, 0, CLASS_PAGE_SIZE, "className,ASC");
+                    const res = await classApi.getAll(undefined, user.userId, undefined, undefined, 0, CLASS_PAGE_SIZE, "className,ASC");
                     let result = res.data.result;
                     let newClasses: ClassResponse[] = [];
                     if (result && typeof result === 'object' && 'content' in result && Array.isArray(result.content)) {
@@ -146,12 +146,12 @@ export default function TeacherAttendance() {
             setHistoryLoading(true);
             setHistoryPage(0);
             try {
-                const res = await attendanceApi.getByClass(selectedClass.classId, 0, HISTORY_PAGE_SIZE, "Date,DESC");
+                const res = await attendanceApi.getAll(undefined, selectedClass.classId, undefined, 0, HISTORY_PAGE_SIZE, "date,desc");
                 let result = res.data.result;
                 let newHistory: AttendanceResponse[] = [];
                 let hasMore = false;
                 if (result && typeof result === 'object' && 'content' in result && Array.isArray(result.content)) {
-                    newHistory = result.content;
+                    newHistory = result.content.flat();
                     hasMore = (result as any).page && ((result as any).page.number + 1) < (result as any).page.totalPages;
                 } else if (Array.isArray(result)) {
                     newHistory = result;
@@ -173,12 +173,12 @@ export default function TeacherAttendance() {
         if (!selectedClass) return;
         setHistoryLoading(true);
         try {
-            const res = await attendanceApi.getByClass(selectedClass.classId, historyPage, HISTORY_PAGE_SIZE, "Date,DESC");
+            const res = await attendanceApi.getAll(undefined, selectedClass.classId, undefined, historyPage, HISTORY_PAGE_SIZE, "date,desc");
             let result = res.data.result;
             let newHistory: AttendanceResponse[] = [];
             let hasMore = false;
             if (result && typeof result === 'object' && 'content' in result && Array.isArray(result.content)) {
-                newHistory = result.content;
+                newHistory = result.content.flat();
                 hasMore = (result as any).page && ((result as any).page.number + 1) < (result as any).page.totalPages;
             } else if (Array.isArray(result)) {
                 newHistory = result;
@@ -213,7 +213,7 @@ export default function TeacherAttendance() {
         const user = getUser();
         if (user) {
             try {
-                const res = await classApi.getByTeacher(user.userId, classPage, CLASS_PAGE_SIZE, "className,ASC");
+                const res = await classApi.getAll(undefined, user.userId, undefined, undefined, classPage, CLASS_PAGE_SIZE, "className,ASC");
                 let result = res.data.result;
                 let newClasses: ClassResponse[] = [];
                 let hasMore = false;

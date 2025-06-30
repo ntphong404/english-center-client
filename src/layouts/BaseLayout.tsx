@@ -16,6 +16,7 @@ import {
 import { SidebarMenuButtonWithClose } from '@/components/ui/sidebar-menu-button';
 import LogoutButton from '@/components/LogoutButton';
 import AvatarMenu from '@/components/AvatarMenu';
+import { getUser } from '@/store/userStore';
 
 interface SidebarLink {
     icon: React.ReactNode;
@@ -46,22 +47,6 @@ const BaseLayout = ({ title, logo, collapsedLogo, sidebarLinks }: BaseLayoutProp
     const navigate = useNavigate();
     const location = useLocation();
 
-    const user = localStorage.getItem('user');
-    let usernameInitial = '';
-    let role = '';
-    let fullName = '';
-
-    if (user) {
-        try {
-            const userData = JSON.parse(user);
-            usernameInitial = userData.username.charAt(0).toUpperCase();
-            role = userData.role.toLowerCase();
-            fullName = userData.fullName;
-        } catch (error) {
-            console.error('Error parsing user data:', error);
-        }
-    }
-
     const isActive = (path: string) => {
         return location.pathname === path;
     };
@@ -70,7 +55,7 @@ const BaseLayout = ({ title, logo, collapsedLogo, sidebarLinks }: BaseLayoutProp
         <SidebarProvider>
             <div className="min-h-screen flex flex-col md:flex-row bg-gray-100 w-full">
                 <Sidebar side="left" variant="sidebar" collapsible="icon">
-                    <SidebarHeader className="p-4 border-b flex justify-center">
+                    <SidebarHeader className="p-4 border-b flex justify-center min-h-[60px] items-center">
                         <SidebarLogo logo={logo} collapsedLogo={collapsedLogo} />
                     </SidebarHeader>
 
@@ -103,17 +88,13 @@ const BaseLayout = ({ title, logo, collapsedLogo, sidebarLinks }: BaseLayoutProp
                 </Sidebar>
 
                 <main className="flex-1 flex flex-col">
-                    <header className="bg-white shadow-sm p-4 flex justify-between items-center">
+                    <header className="bg-white shadow-sm p-4 flex justify-between items-center h-[60px] min-h-[60px]">
                         <div className="flex items-center">
                             <SidebarTrigger className="mr-2" />
                             <h1 className="text-xl font-semibold">{title}</h1>
                         </div>
                         <div className="flex items-center space-x-4">
-                            {usernameInitial && role ? (
-                                <AvatarMenu usernameInitial={usernameInitial} role={role} fullName={fullName} />
-                            ) : (
-                                <LogoutButton variant="outline" size="sm" inSidebar={false} />
-                            )}
+                            <AvatarMenu />
                         </div>
                     </header>
 
